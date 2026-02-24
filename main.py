@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from PIL import Image
 from datetime import datetime
-from pysstv.color import PD120
+from pysstv.color import ScottieS1
 
 # Define directories
 SCRIPT_DIR = Path(__file__).parent
@@ -61,13 +61,13 @@ def convert_image_to_sstv(resized_image_path, output_filename_base):
             else:
                 img = img.convert('RGB')
         
-        # PD120 requires specific dimensions: 640x496 pixels
-        # If image is different size, resize it to PD120 specifications
-        if img.size != (640, 496):
-            img = img.resize((640, 496), Image.Resampling.LANCZOS)
+        # Scottie1 requires specific dimensions: 320x256 pixels
+        # If image is different size, resize it to Scottie1 specifications
+        if img.size != (320, 256):
+            img = img.resize((320, 256), Image.Resampling.LANCZOS)
         
-        # Create SSTV encoder (PD120 mode with 44100 Hz sample rate, 16-bit audio)
-        sstv = PD120(img, SAMPLE_RATE, 16)
+        # Create SSTV encoder (ScottieS1 mode with 44100 Hz sample rate, 16-bit audio)
+        sstv = ScottieS1(img, SAMPLE_RATE, 16)
         
         # Generate WAV file
         output_wav_path = OUTPUT_DIR / f"{output_filename_base}.wav"
@@ -124,9 +124,9 @@ def process_image(input_path):
                 log_error(filename, str(input_path), f"Failed to convert image mode: {str(e)}")
                 return False
         
-        # Resize image to 640x496 (PD120 SSTV requirements)
+        # Resize image to 320x256 (Scottie1 SSTV requirements)
         try:
-            img_resized = img.resize((640, 496), Image.Resampling.LANCZOS)
+            img_resized = img.resize((320, 256), Image.Resampling.LANCZOS)
         except Exception as e:
             log_error(filename, str(input_path), f"Failed to resize image: {str(e)}")
             return False
@@ -195,7 +195,7 @@ def main():
         return
     
     print(f"Found {len(image_files)} file(s) in input directory")
-    print(f"SSTV Mode: PD120 (Color)")
+    print(f"SSTV Mode: ScottieS1 (Color)")
     print(f"Sample Rate: {SAMPLE_RATE} Hz\n")
     
     successful = 0
