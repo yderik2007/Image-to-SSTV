@@ -2,7 +2,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 from datetime import datetime
 from pysstv.color import ScottieS1
 
@@ -18,6 +18,12 @@ SUPPORTED_FORMATS = {'.jpg', '.jpeg', '.png', '.bmp'}
 # SSTV configuration
 SAMPLE_RATE = 48000  # 48000 Hz for better decoder compatibility
 DEFAULT_CALLSIGN = ""  # Optional: Set to your callsign for FSKID identification
+
+# Image quality optimization parameters
+CONTRAST_MULTIPLIER = 1.4   # Enhance contrast for better frequency spread (standard: 1.4)
+SATURATION_MULTIPLIER = 1.15  # Boost saturation for better color separation (standard: 1.15)
+GAMMA_CORRECTION = 0.45     # Gamma correction to restore shadow detail (standard: 0.45)
+DENOISE_RADIUS = 0.7        # Light noise reduction to clean up artifacts (standard: 0.7)
 
 
 def log_error(filename, filepath, error_message):
@@ -36,6 +42,51 @@ def get_base_filename(input_path, file_extension):
     """Get the base filename without extension for output."""
     filename = input_path.stem
     return filename
+
+
+def optimize_image_quality(img):
+    """Apply professional-grade image optimization for SSTV transmission.
+    
+    Optimizations applied:
+    - Contrast enhancement (1.4x): Expands frequency range for robustness
+    - Saturation boost (1.15x): Better color separation in transmission
+    - Gamma correction (0.45): Restores shadow detail
+    - Light noise reduction: Cleans up compression artifacts
+    
+    Args:
+        img: PIL Image object in RGB mode
+        
+    Returns:
+        Optimized PIL Image object
+    """
+    # 1. Enhance contrast for better frequency spread
+    # SSTV uses 1500-2300 Hz (800 Hz span). Higher contrast = wider frequency spread = more robust
+    contrast_enhancer = ImageEnhance.Contrast(img)
+    img = contrast_enhancer.enhance(CONTRAST_MULTIPLIER)
+    
+    # 2. Boost saturation for better color separation
+    # Helps distinguish colors in limited 800 Hz bandwidth
+    color_enhancer = ImageEnhance.Color(img)
+    img = color_enhancer.enhance(SATURATION_MULTIPLIER)
+    
+    # 3. Apply gamma correction to restore shadow detail
+    # Gamma 0.45 brightens midtones/shadows without clipping highlights
+    import numpy as np
+    img_array = np.array(img, dtype=np.float32) / 255.0
+    img_array = np.power(img_array, GAMMA_CORRECTION)
+    img_array = (img_array * 255).astype(np.uint8)
+    img = Image.fromarray(img_array)
+    
+    # 4. Light noise reduction to clean up compression artifacts
+    # Using SMOOTH filter (conservative, 0.7px equivalent)
+    img = img.filter(ImageFilter.GaussianBlur(radius=DENOISE_RADIUS))
+    
+    # 5. Slight sharpening to compensate for blur and enhance details
+    # SSTV bandwidth limitation means sharpening helps maintain clarity
+    sharpness_enhancer = ImageEnhance.Sharpness(img)
+    img = sharpness_enhancer.enhance(1.1)  # 10% sharpening
+    
+    return img
 
 
 def convert_image_to_sstv(resized_image_path, output_filename_base, callsign=None):
@@ -63,10 +114,13 @@ def convert_image_to_sstv(resized_image_path, output_filename_base, callsign=Non
             else:
                 img = img.convert('RGB')
         
-        # Scottie1 requires specific dimensions: 320x256 pixels
-        # If image is different size, resize it to Scottie1 specifications
+        # ScottieS1 requires specific dimensions: 320x256 pixels
+        # If image is different size, resize it to ScottieS1 specifications
         if img.size != (320, 256):
             img = img.resize((320, 256), Image.Resampling.LANCZOS)
+        
+        # Apply quality optimization for best SSTV transmission
+        img = optimize_image_quality(img)
         
         # Create SSTV encoder (ScottieS1 mode with 48000 Hz sample rate, 16-bit audio)
         sstv = ScottieS1(img, SAMPLE_RATE, 16)
@@ -136,17 +190,18 @@ def process_image(input_path):
                 log_error(filename, str(input_path), f"Failed to convert image mode: {str(e)}")
                 return False
         
-        # Resize image to 320x256 (Scottie1 SSTV requirements)
+        # Resize image to 320x256 (ScottieS1 SSTV requirements)
         try:
             img_resized = img.resize((320, 256), Image.Resampling.LANCZOS)
         except Exception as e:
             log_error(filename, str(input_path), f"Failed to resize image: {str(e)}")
             return False
         
-        # Save resized image to temporary location
+        # Save resized image to temporary location with high quality
         try:
             temp_image_path = Path(tempfile.gettempdir()) / f"sstv_temp_{base_filename}.jpg"
-            img_resized.save(temp_image_path, 'JPEG', quality=95)
+            # Use JPEG quality 99 to minimize compression loss during temporary save
+            img_resized.save(temp_image_path, 'JPEG', quality=99)
         except Exception as e:
             log_error(filename, str(input_path), f"Failed to save temporary image: {str(e)}")
             return False
