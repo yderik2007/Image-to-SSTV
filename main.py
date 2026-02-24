@@ -16,7 +16,8 @@ ERROR_LOG_FILE = SCRIPT_DIR / "error_log.txt"
 SUPPORTED_FORMATS = {'.jpg', '.jpeg', '.png', '.bmp'}
 
 # SSTV configuration
-SAMPLE_RATE = 44100  # 44100 Hz for standard WAV quality
+SAMPLE_RATE = 48000  # 48000 Hz for better decoder compatibility
+DEFAULT_CALLSIGN = ""  # Optional: Set to your callsign for FSKID identification
 
 
 def log_error(filename, filepath, error_message):
@@ -37,12 +38,13 @@ def get_base_filename(input_path, file_extension):
     return filename
 
 
-def convert_image_to_sstv(resized_image_path, output_filename_base):
-    """Convert a resized image to SSTV WAV audio file.
+def convert_image_to_sstv(resized_image_path, output_filename_base, callsign=None):
+    """Convert a resized image to SSTV WAV audio file with proper synchronization.
     
     Args:
         resized_image_path: Path to the resized image
         output_filename_base: Output filename without extension
+        callsign: Optional callsign for FSKID identification signal
         
     Returns:
         True if successful, False otherwise
@@ -66,13 +68,23 @@ def convert_image_to_sstv(resized_image_path, output_filename_base):
         if img.size != (320, 256):
             img = img.resize((320, 256), Image.Resampling.LANCZOS)
         
-        # Create SSTV encoder (ScottieS1 mode with 44100 Hz sample rate, 16-bit audio)
+        # Create SSTV encoder (ScottieS1 mode with 48000 Hz sample rate, 16-bit audio)
         sstv = ScottieS1(img, SAMPLE_RATE, 16)
+        
+        # Enable VOX (Voice) tones for proper decoder synchronization
+        # VOX tones provide timing markers at the beginning of transmission
+        sstv.vox_enabled = True
+        
+        # Add FSKID (FSK Identification) signal if callsign provided
+        # FSKID helps receivers identify the transmission
+        if callsign:
+            sstv.add_fskid_text(callsign)
         
         # Generate WAV file
         output_wav_path = OUTPUT_DIR / f"{output_filename_base}.wav"
         
         # Write the SSTV signal to WAV file
+        # This includes: VOX tones -> Calibration header -> VIS code -> Image data -> FSKID
         sstv.write_wav(str(output_wav_path))
         
         return True
@@ -141,7 +153,7 @@ def process_image(input_path):
         
         # Convert resized image to SSTV WAV
         try:
-            convert_image_to_sstv(temp_image_path, base_filename)
+            convert_image_to_sstv(temp_image_path, base_filename, DEFAULT_CALLSIGN)
         except Exception as e:
             log_error(filename, str(input_path), str(e))
             return False
@@ -196,7 +208,11 @@ def main():
     
     print(f"Found {len(image_files)} file(s) in input directory")
     print(f"SSTV Mode: ScottieS1 (Color)")
-    print(f"Sample Rate: {SAMPLE_RATE} Hz\n")
+    print(f"Sample Rate: {SAMPLE_RATE} Hz")
+    print(f"VOX Tones: Enabled")
+    if DEFAULT_CALLSIGN:
+        print(f"FSKID Callsign: {DEFAULT_CALLSIGN}")
+    print()
     
     successful = 0
     failed = 0
