@@ -1,82 +1,95 @@
 # Image-to-SSTV
 
-A Python-based image processing tool for converting and resizing images to the optimal format for SSTV (Slow Scan Television) transmission with professional-grade quality optimization.
+A Python-based image processing tool for converting images to optimized SSTV (Slow Scan Television) WAV audio files for amateur radio transmission.
 
 ## Features
 
-- **Automatic Format Detection**: Identifies JPG, JPEG, PNG, and BMP formats
-- **Smart Format Conversion**: Automatically converts unsupported image formats to JPEG
+- **Automatic Format Detection**: Supports JPG, JPEG, PNG, and BMP formats
+- **Smart Format Conversion**: Automatically converts unsupported formats to JPEG
 - **Professional Quality Optimization**: 
-  - 1.4x contrast enhancement for robust frequency spread
-  - 1.15x saturation boost for better color separation
-  - Gamma correction (0.45) to restore shadow detail
-  - Light noise reduction and sharpening for clarity
-- **SSTV Encoding (ScottieS1 Mode)**:
-  - 320x256 resolution (ScottieS1 specifications)
-  - VOX tones enabled for proper decoder synchronization
-  - 48000 Hz sample rate for maximum compatibility
+  - Contrast enhancement (1.4x) for robust frequency spread
+  - Saturation boost (1.15x) for better color separation
+  - Gamma correction (0.45) for shadow detail
+  - Noise reduction and sharpening for clarity
+- **SSTV ScottieS1 Encoding**:
+  - 320x256 resolution
+  - VOX tones for decoder synchronization
+  - 48000 Hz sample rate
   - Optional FSKID callsign identification
-- **Batch Processing**: Processes all images in the input folder in one run
-- **Automatic Cleanup**: Deletes original images from the input folder after successful processing
-- **Error Logging**: Comprehensive logging with timestamps, filenames, file paths, and error details
-- **Graceful Error Handling**: Continues processing remaining images even if some fail
+- **Batch Processing**: Process multiple images in one run
+- **Error Logging**: Comprehensive error tracking and reporting
+- **Automatic Cleanup**: Removes original images after successful processing
 
-## Project Structure
+## Quick Start
 
-```
-Image-to-SSTV-main/
-├── input/              # Place images here for processing
-├── output/             # WAV audio files are saved here
-├── main.py             # Main processing script
-├── requirements.txt    # Python dependencies
-├── error_log.txt       # Error log file
-└── README.md           # This file
-```
-
-## Installation
-
-1. Clone or navigate to the project directory
-2. Install required dependencies:
+1. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
+2. **Place images in `input/` folder**
 
-1. Place your images in the `input/` folder
-2. Run the script:
+3. **Run the script:**
    ```bash
    python main.py
    ```
-3. Check the `output/` folder for WAV files ready for SSTV transmission
-4. Review `error_log.txt` if any images failed to process
 
-### Optional: Add Your Callsign
+4. **Find WAV files in `output/` folder**
 
-Edit `main.py` line 20 to add your callsign for FSKID identification:
+## Configuration
+
+To add your callsign for FSKID identification, edit line 20 in `main.py`:
 ```python
 DEFAULT_CALLSIGN = "W5XYZ"  # Replace with your callsign
 ```
 
+To adjust quality parameters, modify lines 24-27 in `main.py`:
+```python
+CONTRAST_MULTIPLIER = 1.4      # Contrast enhancement
+SATURATION_MULTIPLIER = 1.15   # Saturation boost
+GAMMA_CORRECTION = 0.45        # Gamma correction
+DENOISE_RADIUS = 0.7           # Noise reduction strength
+```
+
 ## Image Quality Optimization
 
-The script applies professional-grade image optimization to maximize SSTV transmission quality:
+The script applies five professional-grade optimizations:
 
-### Optimization Techniques
+| Optimization | Purpose |
+|--------------|---------|
+| Contrast Enhancement | Expands SSTV frequency range (1500-2300 Hz) for robustness |
+| Saturation Boost | Improves color separation in limited bandwidth |
+| Gamma Correction | Restores shadow and midtone detail |
+| Noise Reduction | Cleans up compression artifacts |
+| Sharpening | Maintains clarity despite bandwidth constraints |
 
-| Optimization | Parameter | Benefit |
-|--------------|-----------|---------|
-| **Contrast Enhancement** | 1.4x multiplier | Expands frequency range for robustness |
-| **Saturation Boost** | 1.15x multiplier | Better color separation in transmission |
-| **Gamma Correction** | 0.45 gamma value | Restores shadow detail in dark areas |
-| **Noise Reduction** | 0.7px Gaussian blur | Cleans up compression artifacts |
-| **Sharpening** | 1.1x enhancement | Maintains clarity despite bandwidth limits |
+**Expected Result:** 15-25% visual quality improvement
 
-These optimizations are scientifically tuned based on SSTV physics and amateur radio standards.
+## Project Structure
 
-### Expected Quality Improvement
+```
+├── main.py              # Main processing script
+├── requirements.txt     # Python dependencies
+├── README.md            # This file
+├── error_log.txt        # Error logging
+├── input/               # Place images here
+└── output/              # WAV files saved here
+```
 
-- **15-25% visual quality improvement** compared to unoptimized transmission
+## Error Handling
+
+If any images fail to process:
+1. Check `error_log.txt` for details
+2. Each error includes timestamp, filename, path, and error message
+3. The script continues processing remaining images
+
+## System Requirements
+
+- Python 3.6+
+- Pillow 10.1.0
+- pysstv 0.1.7+
+- scipy 1.12.0+
+- numpy 1.24.0+
 - **Better frequency spread**: Reduces susceptibility to noise/interference
 - **Enhanced color separation**: Clearer color differentiation in received image
 - **Improved shadow detail**: Better visibility in dark areas of image
